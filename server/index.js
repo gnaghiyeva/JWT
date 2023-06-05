@@ -7,6 +7,7 @@ const dotenv = require('dotenv')
 const mongoose = require('mongoose')
 
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 app.use(bodyParser.json())
 app.use(cors())
 dotenv.config()
@@ -40,7 +41,8 @@ app.post('/api/register', async(req,res)=>{
     const newUser = new Users({
         username:username,
         email:email,
-        password:hashedPassword
+        password:hashedPassword,
+        isAdmin:false
     })
 
     await newUser.save()
@@ -62,18 +64,35 @@ app.post('/api/login', async(req,res)=>{
     }
     else{
         const isValid = await bcrypt.compare(password, existedUsername.password)
-
+        const id = existedUsername._id
+        //username password
+        //access token - KWT
+        //refresh token
+        const token = jwt.sign({id:id}, process.env.SECRET_KEY, {
+            expiresIn:'7d'
+        })
         if(!isValid){
             res.json({auth:false, message:'password is incorrect'})
         }
         else{
-            res.json({auth:true, message:'signed in succesfully'})
+            res.json({auth:true,token:token, user:{
+            
+                    id:existedUsername._id,
+                    username:existedUsername.username,
+                    email:existedUsername.email,
+                    isAdmin:existedUsername.isAdmin
+                
+            }, message:'signed in succesfully'})
         }
     }
 })
 
 
 //users
+app.get('/api/users', async(req,res)=>{
+    const users = await Users.find()
+    res.json({users:users})
+})
 
 DB_CONNECTION = process.env.DB_CONNECTION
 DB_PASSWORD = process.env.DB_PASSWORD
