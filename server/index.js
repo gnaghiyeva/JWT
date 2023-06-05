@@ -12,7 +12,24 @@ app.use(bodyParser.json())
 app.use(cors())
 dotenv.config()
 
-
+///verufy JWT
+const verifyJWT = (req,res,next)=>{
+    const token = req.headers['x-access-token'];
+    if (!token) {
+        res.json({message: 'you need token to get data!'})
+    }
+    else{
+        jwt.verify(token,process.env.SECRET_KEY,(err,decoded)=>{
+            if (err) {
+                res.json({auth: false,message: 'authentication failed'});
+            }
+            else{
+                req.userId = decoded.id;
+                next();
+            }
+        })
+    }
+}
 const Users = mongoose.model('Users', new mongoose.Schema({
     username:String,
     email:String,
